@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Society Dashboard</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #007bff;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin: 10px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 6px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background-color: #007bff;
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 4px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .deleteBtn {
+      background-color: #dc3545;
+    }
+    .deleteBtn:hover {
+      background-color: #b02a37;
+    }
+    .payBtn {
+      background-color: #28a745;
+    }
+    .payBtn:hover {
+      background-color: #218838;
+    }
+    .house {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 10px;
+      background-color: #fdfdfd;
+    }
+    .logout {
+      float: right;
+      background: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    Smart Society Management
+    <button id="logoutBtn" class="logout">Logout</button>
+  </header>
+
+  <div class="container">
+    <div id="addForm">
+      <h3>Add / Update House</h3>
+      <div class="form-group">
+        <label>House Number</label>
+        <input type="text" id="houseNumber" placeholder="E.g. A-101">
+      </div>
+      <div class="form-group">
+        <label>Owner Name</label>
+        <input type="text" id="ownerName" placeholder="E.g. Ruturaj Patil">
+      </div>
+      <div class="form-group">
+        <label>Contact</label>
+        <input type="text" id="contact" placeholder="E.g. 9876543210">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="status">
+          <option value="">Select</option>
+          <option value="Owned">Owned</option>
+          <option value="Rented">Rented</option>
+          <option value="Vacant">Vacant</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Maintenance Due (₹)</label>
+        <input type="number" id="due" placeholder="E.g. 1500">
+      </div>
+      <button id="addBtn" onclick="addOrUpdateHouse()">Add</button>
+    </div>
+
+    <h3>Houses</h3>
+    <div id="houses"></div>
+  </div>
+
+  <script>
+    const socket = io("http://localhost:4000");
+    const role = localStorage.getItem("role");
+    let editingId = null;
+
+    if (!role) window.location.href = "login.html";
+
+    // Hide form for owner
+    window.addEventListener("load", () => {
+      if (role === "owner") document.getElementById("addForm").style.display = "none";
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("role");
+      window.location.href = "login.html";
+    });
+
+    const housesDiv = document.getElementById("houses");
+
+    // Load all houses
+    async function loadHouses() {
+      const res = await fetch("http://localhost:4000/api/houses");
+      const houses = await res.json();
+      displayHouses(houses);
+    }
+
+    function displayHouses(houses) {
+      housesDiv.innerHTML = "";
+      houses.forEach(h => addHouseCard(h));
+    }
+
+    function addHouseCard(house) {
+      const div = document.createElement("div");
+      div.classList.add("house");
+      div.innerHTML = `
+        ${role === "secretary"
+          ? `<button class="deleteBtn" onclick="deleteHouse('${house._id}')">X</button>`
+          : ""}
+        <strong>House:</strong> ${house.houseNumber} <br>
+        <strong>Owner:</strong> ${house.ownerName} <br>
+        <strong>Contact:</strong> ${house.contact} <br>
+        <strong>Status:</strong> ${house.status} <br>
+        <strong>Maintenance:</strong> ${
+          house.maintenanceDue === 0
+            ? "<span style='color:green;'>Paid ✅</span>"
+            : `₹${house.maintenanceDue} ${
+                role === "secretary"
+                  ? `<button class='payBtn' onclick="markPaid('${house._id}')">Mark as Paid</button>`
+                  : ""
+              }`
+        } <br>
+        ${
+          role === "secretary"
+            ? `<button class="payBtn" onclick="editHouse('${house._id}')">✏️ Edit</button>`
+            : ""
+        }
+      `;
+      housesDiv.appendChild(div);
+    }
+
+    // Add or Update house
+    async function addOrUpdateHouse() {
+      const newHouse = {
+        houseNumber: document.getElementById("houseNumber").value,
+        ownerName: document.getElementById("ownerName").value,
+        contact: document.getElementById("contact").value,
+        status: document.getElementById("status").value,
+        maintenanceDue: Number(document.getElementById("due").value),
+      };
+
+      if (editingId) {
+        await fetch(`http://localhost:4000/api/houses/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newHouse),
+        });
+        editingId = null;
+        document.getElementById("addBtn").innerText = "Add";
+      } else {
+        await fetch("http://localhost:4000/api/houses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newHouse),
+        });
+      }
+
+      clearForm();
+      loadHouses();
+    }
+
+    // Edit house (prefill form)
+    async function editHouse(id) {
+      const res = await fetch(`http://localhost:4000/api/houses`);
+      const houses = await res.json();
+      const house = houses.find(h => h._id === id);
+
+      document.getElementById("houseNumber").value = house.houseNumber;
+      document.getElementById("ownerName").value = house.ownerName;
+      document.getElementById("contact").value = house.contact;
+      document.getElementById("status").value = house.status;
+      document.getElementById("due").value = house.maintenanceDue;
+
+      editingId = id;
+      document.getElementById("addBtn").innerText = "Update";
+    }
+
+    // Delete house
+    async function deleteHouse(id) {
+      await fetch(`http://localhost:4000/api/houses/${id}`, { method: "DELETE" });
+      loadHouses();
+    }
+
+    // Mark maintenance as paid
+    async function markPaid(id) {
+      await fetch(`http://localhost:4000/api/houses/${id}/pay`, { method: "PUT" });
+      loadHouses();
+    }
+
+    function clearForm() {
+      document.getElementById("houseNumber").value = "";
+      document.getElementById("ownerName").value = "";
+      document.getElementById("contact").value = "";
+      document.getElementById("status").value = "";
+      document.getElementById("due").value = "";
+    }
+
+    // Real-time updates
+    socket.on("houseAdded", () => loadHouses());
+    socket.on("houseDeleted", () => loadHouses());
+    socket.on("houseUpdated", () => loadHouses());
+
+    loadHouses();
+  </script>
+</body>
+</html>
