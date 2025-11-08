@@ -4,131 +4,79 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Smart Society Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      margin: 0;
-      padding: 0;
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', sans-serif;
     }
-    header {
-      background-color: #007bff;
-      color: white;
-      padding: 12px;
-      text-align: center;
-      font-size: 1.5rem;
-    }
-    .container {
-      width: 90%;
-      max-width: 800px;
-      margin: 20px auto;
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
+    .card {
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      margin-bottom: 15px;
     }
-    .form-group {
-      margin: 10px 0;
-    }
-    label {
-      display: block;
-      margin-bottom: 4px;
-      font-weight: bold;
-    }
-    input, select {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 6px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      background-color: #007bff;
-      border: none;
-      color: white;
-      padding: 10px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin: 4px;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .deleteBtn {
-      background-color: #dc3545;
-    }
-    .deleteBtn:hover {
-      background-color: #b02a37;
-    }
-    .payBtn {
-      background-color: #28a745;
-    }
-    .payBtn:hover {
-      background-color: #218838;
-    }
-    .house {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 12px;
-      margin-top: 10px;
-      background-color: #fdfdfd;
-    }
-    .logout {
-      float: right;
-      background: #6c757d;
-    }
+    .deleteBtn { background-color: #dc3545; color: #fff; border: none; }
+    .deleteBtn:hover { background-color: #b02a37; }
+    .payBtn { background-color: #28a745; color: #fff; border: none; }
+    .payBtn:hover { background-color: #218838; }
   </style>
 </head>
 <body>
-  <header>
-    Smart Society Management
-    <button id="logoutBtn" class="logout">Logout</button>
-  </header>
+  <nav class="navbar navbar-dark bg-primary">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">Smart Society Dashboard</span>
+      <button id="logoutBtn" class="btn btn-light btn-sm">Logout</button>
+    </div>
+  </nav>
 
-  <div class="container">
-    <div id="addForm">
-      <h3>Add / Update House</h3>
-      <div class="form-group">
-        <label>House Number</label>
-        <input type="text" id="houseNumber" placeholder="E.g. A-101">
+  <div class="container mt-4">
+    <div id="addForm" class="card p-4 mb-4">
+      <h5>Add / Update House</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">House Number</label>
+          <input type="text" id="houseNumber" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Owner Name</label>
+          <input type="text" id="ownerName" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Contact</label>
+          <input type="text" id="contact" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Status</label>
+          <select id="status" class="form-select">
+            <option value="">Select</option>
+            <option value="Owned">Owned</option>
+            <option value="Rented">Rented</option>
+            <option value="Vacant">Vacant</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Maintenance Due (₹)</label>
+          <input type="number" id="due" class="form-control">
+        </div>
       </div>
-      <div class="form-group">
-        <label>Owner Name</label>
-        <input type="text" id="ownerName" placeholder="E.g. Ruturaj Patil">
-      </div>
-      <div class="form-group">
-        <label>Contact</label>
-        <input type="text" id="contact" placeholder="E.g. 9876543210">
-      </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="status">
-          <option value="">Select</option>
-          <option value="Owned">Owned</option>
-          <option value="Rented">Rented</option>
-          <option value="Vacant">Vacant</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Maintenance Due (₹)</label>
-        <input type="number" id="due" placeholder="E.g. 1500">
-      </div>
-      <button id="addBtn" onclick="addOrUpdateHouse()">Add</button>
+      <button id="addBtn" class="btn btn-primary mt-3" onclick="addOrUpdateHouse()">Add</button>
     </div>
 
-    <h3>Houses</h3>
+    <h5 class="mb-3">🏠 Houses</h5>
     <div id="houses"></div>
   </div>
 
   <script>
-    const socket = io("http://localhost:4000");
+    // 👉 Replace this URL with your actual Render backend link
+    const BACKEND_URL = "https://smartsociety-backend.onrender.com";
+
+    const socket = io(BACKEND_URL);
     const role = localStorage.getItem("role");
     let editingId = null;
 
     if (!role) window.location.href = "login.html";
 
-    // Hide form for owner
     window.addEventListener("load", () => {
       if (role === "owner") document.getElementById("addForm").style.display = "none";
     });
@@ -140,9 +88,8 @@
 
     const housesDiv = document.getElementById("houses");
 
-    // Load all houses
     async function loadHouses() {
-      const res = await fetch("http://localhost:4000/api/houses");
+      const res = await fetch(`${BACKEND_URL}/api/houses`);
       const houses = await res.json();
       displayHouses(houses);
     }
@@ -152,36 +99,32 @@
       houses.forEach(h => addHouseCard(h));
     }
 
-    function addHouseCard(house) {
+    function addHouseCard(h) {
       const div = document.createElement("div");
-      div.classList.add("house");
+      div.classList.add("card", "p-3");
       div.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <strong>${h.houseNumber}</strong>
+          ${role === "secretary"
+            ? `<button class="btn btn-sm deleteBtn" onclick="deleteHouse('${h._id}')">Delete</button>`
+            : ""}
+        </div>
+        <p class="mb-1"><b>Owner:</b> ${h.ownerName}</p>
+        <p class="mb-1"><b>Contact:</b> ${h.contact}</p>
+        <p class="mb-1"><b>Status:</b> ${h.status}</p>
+        <p class="mb-1"><b>Maintenance:</b> ${
+          h.maintenanceDue === 0
+            ? "<span class='text-success fw-bold'>Paid ✅</span>"
+            : `₹${h.maintenanceDue}`
+        }</p>
         ${role === "secretary"
-          ? `<button class="deleteBtn" onclick="deleteHouse('${house._id}')">X</button>`
+          ? `<button class="btn btn-sm payBtn me-2" onclick="markPaid('${h._id}')">Mark as Paid</button>
+             <button class="btn btn-sm btn-warning text-white" onclick="editHouse('${h._id}')">Edit</button>`
           : ""}
-        <strong>House:</strong> ${house.houseNumber} <br>
-        <strong>Owner:</strong> ${house.ownerName} <br>
-        <strong>Contact:</strong> ${house.contact} <br>
-        <strong>Status:</strong> ${house.status} <br>
-        <strong>Maintenance:</strong> ${
-          house.maintenanceDue === 0
-            ? "<span style='color:green;'>Paid ✅</span>"
-            : `₹${house.maintenanceDue} ${
-                role === "secretary"
-                  ? `<button class='payBtn' onclick="markPaid('${house._id}')">Mark as Paid</button>`
-                  : ""
-              }`
-        } <br>
-        ${
-          role === "secretary"
-            ? `<button class="payBtn" onclick="editHouse('${house._id}')">✏️ Edit</button>`
-            : ""
-        }
       `;
       housesDiv.appendChild(div);
     }
 
-    // Add or Update house
     async function addOrUpdateHouse() {
       const newHouse = {
         houseNumber: document.getElementById("houseNumber").value,
@@ -192,7 +135,7 @@
       };
 
       if (editingId) {
-        await fetch(`http://localhost:4000/api/houses/${editingId}`, {
+        await fetch(`${BACKEND_URL}/api/houses/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newHouse),
@@ -200,42 +143,35 @@
         editingId = null;
         document.getElementById("addBtn").innerText = "Add";
       } else {
-        await fetch("http://localhost:4000/api/houses", {
+        await fetch(`${BACKEND_URL}/api/houses`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newHouse),
         });
       }
-
-      clearForm();
-      loadHouses();
+      clearForm(); loadHouses();
     }
 
-    // Edit house (prefill form)
     async function editHouse(id) {
-      const res = await fetch(`http://localhost:4000/api/houses`);
+      const res = await fetch(`${BACKEND_URL}/api/houses`);
       const houses = await res.json();
       const house = houses.find(h => h._id === id);
-
       document.getElementById("houseNumber").value = house.houseNumber;
       document.getElementById("ownerName").value = house.ownerName;
       document.getElementById("contact").value = house.contact;
       document.getElementById("status").value = house.status;
       document.getElementById("due").value = house.maintenanceDue;
-
       editingId = id;
       document.getElementById("addBtn").innerText = "Update";
     }
 
-    // Delete house
     async function deleteHouse(id) {
-      await fetch(`http://localhost:4000/api/houses/${id}`, { method: "DELETE" });
+      await fetch(`${BACKEND_URL}/api/houses/${id}`, { method: "DELETE" });
       loadHouses();
     }
 
-    // Mark maintenance as paid
     async function markPaid(id) {
-      await fetch(`http://localhost:4000/api/houses/${id}/pay`, { method: "PUT" });
+      await fetch(`${BACKEND_URL}/api/houses/${id}/pay`, { method: "PUT" });
       loadHouses();
     }
 
@@ -247,11 +183,9 @@
       document.getElementById("due").value = "";
     }
 
-    // Real-time updates
-    socket.on("houseAdded", () => loadHouses());
-    socket.on("houseDeleted", () => loadHouses());
-    socket.on("houseUpdated", () => loadHouses());
-
+    socket.on("houseAdded", loadHouses);
+    socket.on("houseDeleted", loadHouses);
+    socket.on("houseUpdated", loadHouses);
     loadHouses();
   </script>
 </body>

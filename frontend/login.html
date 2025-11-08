@@ -2,135 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Society Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #d4f1e9, #f5fff8);
+      background: linear-gradient(135deg, #007bff, #6f42c1);
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
     }
-
-    .login-container {
-      background: white;
-      padding: 35px;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      text-align: center;
-      width: 340px;
-      animation: fadeIn 0.7s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    h2 {
-      color: #4CAF50;
-      margin-bottom: 20px;
-    }
-
-    input {
-      width: 85%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      outline: none;
-      transition: 0.2s;
-    }
-
-    input:focus {
-      border-color: #4CAF50;
-      box-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
-    }
-
-    button {
-      width: 90%;
-      padding: 10px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 15px;
-      transition: background-color 0.3s ease;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    .info {
-      margin-top: 20px;
-      font-size: 14px;
-      color: #555;
-    }
-
-    .info code {
-      background: #eee;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 13px;
-      color: #333;
-    }
-
-    .error {
-      color: red;
-      font-weight: bold;
-      margin-top: 10px;
+    .login-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      padding: 40px;
+      width: 350px;
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <h2>🏢 Smart Society Login</h2>
-    <input type="text" id="username" placeholder="Username" autocomplete="off">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <p class="error" id="errorMsg"></p>
-
-    <div class="info">
-      <p>💼 <b>Secretary Login:</b><br><code>secretary / admin123</code></p>
-      <p>👪 <b>Owner Login:</b><br><code>owner / owner123</code></p>
+  <div class="login-card">
+    <h3 class="text-center mb-3">🏢 Smart Society</h3>
+    <div class="mb-3">
+      <label class="form-label">Username</label>
+      <input type="text" id="username" class="form-control" placeholder="Enter username">
     </div>
+    <div class="mb-3">
+      <label class="form-label">Password</label>
+      <input type="password" id="password" class="form-control" placeholder="Enter password">
+    </div>
+    <button class="btn btn-primary w-100" onclick="login()">Login</button>
+    <p id="msg" class="text-center mt-3 text-danger fw-semibold"></p>
   </div>
 
   <script>
     function login() {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
-      const errorMsg = document.getElementById("errorMsg");
-
-      errorMsg.textContent = "";
-
-      if (!username || !password) {
-        errorMsg.textContent = "⚠ Please fill in both fields!";
-        return;
-      }
+      const msg = document.getElementById("msg");
 
       if (username === "secretary" && password === "admin123") {
         localStorage.setItem("role", "secretary");
         window.location.href = "index.html";
-      } 
-      else if (username === "owner" && password === "owner123") {
+      } else if (username === "owner" && password === "owner123") {
         localStorage.setItem("role", "owner");
         window.location.href = "index.html";
-      } 
-      else {
-        errorMsg.textContent = "❌ Invalid username or password!";
+      } else {
+        msg.innerText = "❌ Invalid credentials!";
       }
     }
-
-    window.addEventListener("load", () => {
-      const role = localStorage.getItem("role");
-      if (role) window.location.href = "index.html";
-    });
   </script>
 </body>
 </html>
